@@ -1,6 +1,7 @@
 #include "mat_mul.h"
 
 #include <pthread.h>
+#include <stdio.h>
 
 #ifndef max
 #define max(a,b)  (((a) > (b)) ? (a) : (b))
@@ -23,31 +24,13 @@ typedef struct Tdata {
 static void* mat_mul_thread(void *data) {
 	Tdata* td = (Tdata*)data;
 	int is = td->is, ie = td->ie;
-	int c00, c01, c10, c11;
 	for(int ii = is; ii < ie; ii += ib) {
 		for(int kk = 0; kk < K; kk += kb) {
-			for(int j = 0; j < N; j += 2) {
+			for(int k = kk; k < min(K, kk + kb); k++) {
 				for(int i = ii; i < min(ie, ii + ib); i++) {
-					if(kk == 0)
-						c00 = c01 = c10 = c11 = 0;
-					else {
-						c00 = C[(i + 0) * N + (j + 0)];
-						c01 = C[(i + 0) * N + (j + 1)];
-						c10 = C[(i + 1) * N + (j + 0)];
-						c11 = C[(i + 1) * N + (j + 1)];
+					for(int j = 0; j < N; j++) {
+						C[i * N + j] += A[i * K + k] * B[k * N + j];
 					}
-
-					for(int k = kk; k < min(K, kk + kb); k++) {
-						c00 += B[k * N + (j + 0)] * A[(i + 0) * K + k];
-						c01 += B[k * N + (j + 1)] * A[(i + 0) * K + k];
-						c10 += B[k * N + (j + 0)] * A[(i + 1) * K + k];
-						c11 += B[k * N + (j + 1)] * A[(i + 1) * K + k];
-					}
-
-					C[(i + 0) * N + (j + 0)] = c00;
-					C[(i + 0) * N + (j + 1)] = c01;
-					C[(i + 1) * N + (j + 0)] = c10;
-					C[(i + 1) * N + (j + 1)] = c11;
 				}
 			}
 		}
